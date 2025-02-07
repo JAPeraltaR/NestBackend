@@ -6,13 +6,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity';
 import { Model } from 'mongoose';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { Payload } from './interface/jwt-payload.interface';
+import { LoginResponse } from './interface/login-response';
 
 
 @Injectable()
 export class AuthService {
 
   constructor(
-    @InjectModel( User.name ) private userModel: Model<User>,
+    @InjectModel( User.name ) 
+    private userModel: Model<User>,
+    private jwtService: JwtService
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -35,16 +40,16 @@ export class AuthService {
     }
   }
 
-  async login( loginDto: LoginDto ) {
+  async login( loginDto: LoginDto ): Promise<LoginResponse> {
     const { email, pass } = loginDto;
     const user = await this.userModel.findOne({email});
     if( !bcryptjs.compareSync(pass, user?.pass) || !user ){
       throw new UnauthorizedException('Invalid Credentials!!');
     }
-    const { pass:_ , ...userData } = user.toJSON();
+    const { pass:_ , ...rest } = user.toJSON();
     return {
-      user: userData,
-      token: 'ACADeBEHABERUNTOKEN'
+      user: rest,
+      access_token: this.getJwtToken( { id: user.id } )
     };
   }
 
@@ -62,5 +67,9 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  getJwtToken( payload: Payload ){
+    return this.jwtService.sign(payload);
   }
 }
