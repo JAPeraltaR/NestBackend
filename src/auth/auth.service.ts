@@ -1,14 +1,12 @@
 import * as bcryptjs from 'bcryptjs'
 import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity';
-import { Model } from 'mongoose';
-import { LoginDto } from './dto/login.dto';
+import { get, Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Payload } from './interface/jwt-payload.interface';
 import { LoginResponse } from './interface/login-response';
+import { CreateUserDto, LoginDto, RegisterUserDto, UpdateAuthDto } from './dto';
 
 
 @Injectable()
@@ -40,6 +38,18 @@ export class AuthService {
     }
   }
 
+  async register( registerDto: RegisterUserDto ): Promise<LoginResponse>{
+    const user = await this.create(registerDto);
+    if (!user._id) {
+      throw new Error('User ID is missing');
+    }
+    const { _id , ...rest } = user;
+    return {
+      user: rest,
+      access_token: this.getJwtToken({ id: user._id })
+    }
+  }
+
   async login( loginDto: LoginDto ): Promise<LoginResponse> {
     const { email, pass } = loginDto;
     const user = await this.userModel.findOne({email});
@@ -53,8 +63,14 @@ export class AuthService {
     };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  findAll(): Promise<User[]> {
+    return this.userModel.find();
+  }
+
+  async finByUserID( userId: string ): Promise<User>{
+    const user = await this.userModel.findById( userId );
+    const { pass , ...rest } = user!.toJSON();
+    return rest;
   }
 
   findOne(id: number) {
@@ -70,6 +86,8 @@ export class AuthService {
   }
 
   getJwtToken( payload: Payload ){
-    return this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload)
+    if( !token ) throw new Error('Error al crear el token');
+    return token;
   }
 }
