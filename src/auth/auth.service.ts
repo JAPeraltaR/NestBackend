@@ -2,7 +2,7 @@ import * as bcryptjs from 'bcryptjs'
 import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity';
-import { get, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Payload } from './interface/jwt-payload.interface';
 import { LoginResponse } from './interface/login-response';
