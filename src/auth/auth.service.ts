@@ -53,8 +53,11 @@ export class AuthService {
   async login( loginDto: LoginDto ): Promise<LoginResponse> {
     const { email, pass } = loginDto;
     const user = await this.userModel.findOne({email});
-    if( !bcryptjs.compareSync(pass, user?.pass) || !user ){
-      throw new UnauthorizedException('Invalid Credentials!!');
+    if( !user ){
+      throw new UnauthorizedException('Invalid Credentials - email!!');
+    }
+    if( !bcryptjs.compareSync(pass, user!.pass) ){
+      throw new UnauthorizedException('Invalid Credentials - password!!');
     }
     const { pass:_ , ...rest } = user.toJSON();
     return {
@@ -63,7 +66,7 @@ export class AuthService {
     };
   }
 
-  findAll(): Promise<User[]> {
+  async findAll(): Promise<User[]> {
     return this.userModel.find();
   }
 
